@@ -1,6 +1,7 @@
 package activities;
 
 import android.content.Intent;
+import android.os.PersistableBundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
 import android.os.Bundle;
@@ -38,11 +39,19 @@ public class MainActivity extends AppCompatActivity {
     private SearchView searchView;
     private DevicesFragment devicesFragment;
     private ActionsFragment actionsFragment;
+    private int activeTab;
+    String ACTIVE_TAB = "ACTIVE_TAB";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        if(savedInstanceState == null) {
+            activeTab = 0;
+        } else {
+            activeTab = savedInstanceState.getInt(ACTIVE_TAB);
+        }
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
@@ -100,7 +109,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 super.onTabSelected(tab);
-                switch(tab.getPosition())
+                activeTab = tab.getPosition();
+
+                // if the searchview hasn't been made yet, don't try to modify it's query hints
+                if(searchView == null)
+                    return;
+
+                setQueryHint(searchView, activeTab);
+                /*
+                switch(activeTab)
                 {
                     case 0:
                         searchView.setQueryHint("Search Devices...");
@@ -114,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
 //                        searchView.setQueryHint("Search Alerts...");
 //                        break;
                 }
+                */
             }
 
             @Override
@@ -126,7 +144,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
     }
 
     @Override
@@ -136,8 +153,8 @@ public class MainActivity extends AppCompatActivity {
         MenuItem menuItem = menu.findItem(R.id.action_search);
 
         searchView = (SearchView) MenuItemCompat.getActionView(menuItem);
-        //since we start highlighted at item 0
-        searchView.setQueryHint("Search Devices...");
+        setQueryHint(searchView, activeTab);
+
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -186,6 +203,26 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void setQueryHint(SearchView searchView, int activeTab) {
+
+        switch(activeTab)
+        {
+            case 0:
+                searchView.setQueryHint("Search Devices...");
+                break;
+
+            case 1:
+                searchView.setQueryHint("Search Actions...");
+                break;
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        super.onSaveInstanceState(outState, outPersistentState);
+        outState.putInt(ACTIVE_TAB, activeTab);
     }
 
     class ViewPagerAdapter extends FragmentPagerAdapter {
