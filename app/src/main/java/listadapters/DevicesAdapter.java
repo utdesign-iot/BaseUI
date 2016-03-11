@@ -28,6 +28,10 @@ public class DevicesAdapter extends BaseAdapter implements Filterable{
     ArrayList<Device> filterList;
     DeviceFilter deviceFilter;
 
+    public void setContext(Context context) {
+        this.context = context;
+    }
+
     public DevicesAdapter(Context c, ArrayList<Device> devices)
     {
         context = c;

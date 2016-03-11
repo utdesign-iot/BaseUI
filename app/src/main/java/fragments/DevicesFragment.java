@@ -43,8 +43,9 @@ public class DevicesFragment extends Fragment {
         for(int i = 0; i < deviceNames.length; i++) {
             devices.add(new Device(deviceNames[i], imageIds[i], descriptions[i]));
         }
-
     }
+
+
 
     public DevicesAdapter getDevicesAdapter() {
         // this is to ensure, whenever the devices tab gets closed

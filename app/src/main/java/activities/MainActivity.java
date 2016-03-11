@@ -39,20 +39,30 @@ public class MainActivity extends AppCompatActivity {
     private SearchView searchView;
     private DevicesFragment devicesFragment;
     private ActionsFragment actionsFragment;
+
     private int activeTab;
+    private String queryString;
+    private boolean isIconified;
     String ACTIVE_TAB = "ACTIVE_TAB";
+    String QUERY_STRING = "QUERY_STRING";
+    String ICONIFIED = "ICONIFIED";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
         if(savedInstanceState == null) {
             activeTab = 0;
+            queryString = "";
+            isIconified = true;
         } else {
             activeTab = savedInstanceState.getInt(ACTIVE_TAB);
+            queryString = savedInstanceState.getString(QUERY_STRING);
+            isIconified = savedInstanceState.getBoolean(ICONIFIED);
         }
 
+        setContentView(R.layout.activity_main);
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
         actionBar = getSupportActionBar();
@@ -116,22 +126,6 @@ public class MainActivity extends AppCompatActivity {
                     return;
 
                 setQueryHint(searchView, activeTab);
-                /*
-                switch(activeTab)
-                {
-                    case 0:
-                        searchView.setQueryHint("Search Devices...");
-                        break;
-
-                    case 1:
-                        searchView.setQueryHint("Search Actions...");
-                        break;
-
-//                    case 2:
-//                        searchView.setQueryHint("Search Alerts...");
-//                        break;
-                }
-                */
             }
 
             @Override
@@ -154,6 +148,8 @@ public class MainActivity extends AppCompatActivity {
 
         searchView = (SearchView) MenuItemCompat.getActionView(menuItem);
         setQueryHint(searchView, activeTab);
+        searchView.setIconified(isIconified);
+        searchView.setQuery(queryString, false);
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -167,7 +163,6 @@ public class MainActivity extends AppCompatActivity {
                 // TODO: find a more efficient way to search.
                 // maybe search only active tabs, and make sure to filter text upon switching tabs.
                 // maybe just use multiple threads
-
                 devicesFragment.getDevicesAdapter().getFilter().filter(newText);
                 actionsFragment.getActionsAdapter().getFilter().filter(newText);
                 return true;
@@ -220,9 +215,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
-        super.onSaveInstanceState(outState, outPersistentState);
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        queryString = searchView.getQuery().toString();
+        isIconified = searchView.isIconified();
+
         outState.putInt(ACTIVE_TAB, activeTab);
+        outState.putString(QUERY_STRING, queryString);
+        outState.putBoolean(ICONIFIED, isIconified);
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
     }
 
     class ViewPagerAdapter extends FragmentPagerAdapter {
