@@ -21,9 +21,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.support.v4.view.ViewPager;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import fragments.ActionsFragment;
+import fragments.AlertsFragment;
 import fragments.DevicesFragment;
 import com.utdesign.iot.baseui.R;
 
@@ -39,8 +41,14 @@ public class MainActivity extends AppCompatActivity {
     private SearchView searchView;
     private DevicesFragment devicesFragment;
     private ActionsFragment actionsFragment;
+    private AlertsFragment alertsFragment;
 
     private int activeTab;
+
+    private String devicesTag;
+    private String actionsTag;
+    private String alertsTag;
+
     private String queryString;
     private boolean isIconified;
     String ACTIVE_TAB = "ACTIVE_TAB";
@@ -48,19 +56,10 @@ public class MainActivity extends AppCompatActivity {
     String ICONIFIED = "ICONIFIED";
 
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        if(savedInstanceState == null) {
-            activeTab = 0;
-            queryString = "";
-            isIconified = true;
-        } else {
-            activeTab = savedInstanceState.getInt(ACTIVE_TAB);
-            queryString = savedInstanceState.getString(QUERY_STRING);
-            isIconified = savedInstanceState.getBoolean(ICONIFIED);
-        }
 
         setContentView(R.layout.activity_main);
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -101,13 +100,37 @@ public class MainActivity extends AppCompatActivity {
 
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
 
-        devicesFragment = new DevicesFragment();
-        actionsFragment = new ActionsFragment();
-        //alertsFragment = new AlertsFragment();
+        /*
+        * How to add a new tab,
+        * add a line under the savedInstanceState == null that initiates the fragment
+        * add a line in instantiateItem that initializes the fragment's tag.
+        * save the fragment's tag in onSaveInstanceState
+        * reinitialize the fragment from the fragmentmanager in the else statement
+        * add a fragment to viewpager.
+        * */
+        if(savedInstanceState == null) {
+            activeTab = 0;
+            queryString = "";
+            isIconified = true;
+
+            devicesFragment = new DevicesFragment();
+            actionsFragment = new ActionsFragment();
+            alertsFragment = new AlertsFragment();
+
+        } else {
+            activeTab = savedInstanceState.getInt(ACTIVE_TAB);
+            queryString = savedInstanceState.getString(QUERY_STRING);
+            isIconified = savedInstanceState.getBoolean(ICONIFIED);
+
+            devicesFragment = (DevicesFragment) getSupportFragmentManager().findFragmentByTag(savedInstanceState.getString("Devices"));
+            actionsFragment = (ActionsFragment) getSupportFragmentManager().findFragmentByTag(savedInstanceState.getString("Actions"));
+            alertsFragment = (AlertsFragment) getSupportFragmentManager().findFragmentByTag(savedInstanceState.getString("Alerts"));
+        }
 
         adapter.addFragment(devicesFragment, "Devices");
         adapter.addFragment(actionsFragment, "Actions");
-        //adapter.addFragment(alertsFragment, "Alerts");
+        adapter.addFragment(alertsFragment, "Alerts");
+
         mViewPager = (ViewPager)findViewById(R.id.viewpager);
         mViewPager.setAdapter(adapter);
         mTabLayout = (TabLayout)findViewById(R.id.tablayout);
@@ -149,12 +172,11 @@ public class MainActivity extends AppCompatActivity {
         searchView = (SearchView) MenuItemCompat.getActionView(menuItem);
         setQueryHint(searchView, activeTab);
         searchView.setIconified(isIconified);
-        searchView.setQuery(queryString, false);
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                return false;
+                return onQueryTextChange(query);
             }
 
             @Override
@@ -168,6 +190,10 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+
+        if(!searchView.isIconified())
+            searchView.setQuery(queryString, true);
+
         return true;
     }
 
@@ -211,6 +237,10 @@ public class MainActivity extends AppCompatActivity {
             case 1:
                 searchView.setQueryHint("Search Actions...");
                 break;
+
+            case 2:
+                searchView.setQueryHint("Search Alerts...");
+                break;
         }
     }
 
@@ -224,6 +254,9 @@ public class MainActivity extends AppCompatActivity {
         outState.putInt(ACTIVE_TAB, activeTab);
         outState.putString(QUERY_STRING, queryString);
         outState.putBoolean(ICONIFIED, isIconified);
+        outState.putString("Devices", devicesTag);
+        outState.putString("Actions", actionsTag);
+        outState.putString("Alerts", alertsTag);
     }
 
     @Override
@@ -242,6 +275,26 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public Fragment getItem(int position) {
             return mFragmentList.get(position);
+        }
+
+        @Override
+        public Object instantiateItem(ViewGroup container, int position) {
+
+            Fragment createdFragment = (Fragment) super.instantiateItem(container, position);
+            // get the tags set by FragmentPagerAdapter
+            switch (position) {
+                case 0:
+                    devicesTag = createdFragment.getTag();
+                    break;
+                case 1:
+                    actionsTag = createdFragment.getTag();
+                    break;
+                case 2:
+                    alertsTag = createdFragment.getTag();
+                    break;
+            }
+            // ... save the tags somewhere so you can reference them later
+            return createdFragment;
         }
 
         @Override
