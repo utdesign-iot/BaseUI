@@ -14,11 +14,11 @@ import com.utdesign.iot.baseui.R;
 import java.util.ArrayList;
 
 import activities.BrowserActivity;
+import activities.MainActivity;
 import listadapters.DevicesAdapter;
 import listitems.Device;
 
 public class DevicesFragment extends Fragment {
-    public final static String URL = "http://ecs.utdallas.edu";
     ListView listView;
     DevicesAdapter devicesAdapter;
     String[] deviceNames = {
@@ -73,7 +73,7 @@ public class DevicesFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent intent = new Intent(getContext(), BrowserActivity.class);
-                intent.putExtra(URL, descriptions[position]);
+                intent.putExtra(MainActivity.URL, descriptions[position]);
                 startActivity(intent);
             }
         });

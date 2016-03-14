@@ -15,7 +15,7 @@ public class BrowserActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.about_activty);
 
-        String url = getIntent().getStringExtra(DevicesFragment.URL);
+        String url = getIntent().getStringExtra(MainActivity.URL);
 
         WebView webView = (WebView) findViewById(R.id.about_webview);
         webView.getSettings().setJavaScriptEnabled(true);

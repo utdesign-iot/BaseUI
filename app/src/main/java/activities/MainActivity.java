@@ -2,9 +2,16 @@ package activities;
 
 import android.content.Intent;
 import android.os.PersistableBundle;
+import android.app.PendingIntent;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
 import android.os.Bundle;
+import android.content.IntentFilter;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.os.Parcelable;
+import android.os.PersistableBundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
@@ -29,10 +36,12 @@ import fragments.AlertsFragment;
 import fragments.DevicesFragment;
 import com.utdesign.iot.baseui.R;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    public final static String URL = "http://ecs.utdallas.edu";
     private Toolbar mToolbar;
     private TabLayout mTabLayout;
     private DrawerLayout mDrawerLayout;
@@ -42,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private DevicesFragment devicesFragment;
     private ActionsFragment actionsFragment;
     private AlertsFragment alertsFragment;
-
+    private NfcAdapter nfcAdapter;
     private int activeTab;
 
     private String devicesTag;
@@ -67,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         actionBar = getSupportActionBar();
         actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
         actionBar.setDisplayHomeAsUpEnabled(true);
-
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.navigation_view);
@@ -162,7 +171,67 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        Intent intent = new Intent(this, MainActivity.class).addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        IntentFilter[] intentFilters = new IntentFilter[]{};
+        nfcAdapter.enableForegroundDispatch(this, pendingIntent, intentFilters, null);
+    }
 
+    @Override
+    protected void onPause()
+    {
+        super.onPause();
+        nfcAdapter.disableForegroundDispatch(this);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if(intent.hasExtra(NfcAdapter.EXTRA_TAG))
+        {
+            Toast.makeText(this, "NfcIntent", Toast.LENGTH_SHORT).show();
+            Parcelable[] parcelables = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+            if(parcelables != null && parcelables.length > 0)
+                readTextFromMessage((NdefMessage) parcelables[0]);
+            else
+                Toast.makeText(this, "No NDEF messages found", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void readTextFromMessage (NdefMessage ndefMessage)
+    {
+        NdefRecord[] ndefRecords = ndefMessage.getRecords();
+        if(ndefRecords != null && ndefRecords.length > 0)
+        {
+            NdefRecord ndefRecord = ndefRecords[0];
+            String tagContent = getTextFromNdefRecord(ndefRecord);
+            Intent intent = new Intent(this, BrowserActivity.class);
+            intent.putExtra(URL, tagContent);
+            startActivity(intent);
+        }
+        else
+            Toast.makeText(this, "No NDEF records found", Toast.LENGTH_SHORT).show();
+    }
+
+    public String getTextFromNdefRecord(NdefRecord ndefRecord)
+    {
+        String tagContent = null;
+        try
+        {
+            byte[] payload = ndefRecord.getPayload();
+            String textEncoding = ((payload[0] & 128) == 0) ? "UTF-8" : "UTF-16";
+            int languageSize = payload[0] & 0063;
+            tagContent = new String(payload, languageSize + 1, payload.length - languageSize - 1, textEncoding);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+        }
+        return tagContent;
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
